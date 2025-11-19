@@ -86,12 +86,33 @@ The application will be available at:
 - **Video Processing**: FFmpeg (via fluent-ffmpeg)
 - **File Handling**: Multer for uploads, Archiver for ZIP creation
 
+## Deployment (Vercel)
+
+This project is configured for Vercel deployment:
+
+1. **Connect your repository** to Vercel
+2. **Configure build settings** (auto-detected from `vercel.json`):
+   - Build Command: `cd client && npm install && npm run build`
+   - Output Directory: `client/build`
+   - Install Command: `npm install && cd client && npm install && cd ../api && npm install`
+
+3. **Important Note**: Vercel serverless functions have limitations:
+   - **FFmpeg Requirement**: FFmpeg needs to be available in the serverless function environment. Vercel's default environment doesn't include FFmpeg. You may need to:
+     - Use Vercel Pro plan (supports longer function execution times)
+     - Consider using an external video processing service
+     - Or deploy to a platform that supports FFmpeg (like Railway, Render, or a VPS)
+
+4. **Function Configuration**:
+   - Max Duration: 300 seconds (5 minutes) - configured in `vercel.json`
+   - Memory: 3008 MB - configured in `vercel.json`
+
 ## Notes
 
 - Maximum file size: 500MB per video
 - Maximum 20 videos per batch
 - Videos are processed sequentially to maintain quality
-- Processed files are stored temporarily and can be cleaned up
+- Processed files are stored temporarily in `/tmp` (Vercel) or local directories (development)
+- Video processing time depends on file size and may exceed free tier limits on Vercel
 
 ## License
 
