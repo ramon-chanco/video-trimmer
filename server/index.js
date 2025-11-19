@@ -245,7 +245,27 @@ app.delete('/api/cleanup/:sessionId', async (req, res) => {
   }
 });
 
+// Serve React app in production
+if (process.env.NODE_ENV === 'production') {
+  const clientBuildPath = path.join(__dirname, '../client/build');
+  
+  // Serve static files from React build
+  app.use(express.static(clientBuildPath));
+  
+  // Handle React routing - return index.html for all non-API routes
+  app.get('*', (req, res) => {
+    // Don't serve index.html for API routes
+    if (req.path.startsWith('/api')) {
+      return res.status(404).json({ error: 'API route not found' });
+    }
+    res.sendFile(path.join(clientBuildPath, 'index.html'));
+  });
+}
+
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
+  if (process.env.NODE_ENV === 'production') {
+    console.log('Production mode: Serving React app');
+  }
 });
 

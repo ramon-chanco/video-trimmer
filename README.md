@@ -86,25 +86,32 @@ The application will be available at:
 - **Video Processing**: FFmpeg (via fluent-ffmpeg)
 - **File Handling**: Multer for uploads, Archiver for ZIP creation
 
-## Deployment (Vercel)
+## Deployment
 
-This project is configured for Vercel deployment:
+### Railway (Recommended - Supports FFmpeg)
 
-1. **Connect your repository** to Vercel
-2. **Configure build settings** (auto-detected from `vercel.json`):
-   - Build Command: `cd client && npm install && npm run build`
-   - Output Directory: `client/build`
-   - Install Command: `npm install && cd client && npm install && cd ../api && npm install`
+This project is configured for Railway deployment out of the box:
 
-3. **Important Note**: Vercel serverless functions have limitations:
-   - **FFmpeg Requirement**: FFmpeg needs to be available in the serverless function environment. Vercel's default environment doesn't include FFmpeg. You may need to:
-     - Use Vercel Pro plan (supports longer function execution times)
-     - Consider using an external video processing service
-     - Or deploy to a platform that supports FFmpeg (like Railway, Render, or a VPS)
+1. **Go to [railway.app](https://railway.app)** and sign up with GitHub
+2. **Click "New Project"** → **"Deploy from GitHub repo"**
+3. **Select your `video-trimmer` repository**
+4. **Railway will automatically:**
+   - Detect Node.js
+   - Install FFmpeg (via nixpacks.toml)
+   - Run `npm install` and install dependencies
+   - Build the React frontend
+   - Start the server
 
-4. **Function Configuration**:
-   - Max Duration: 300 seconds (5 minutes) - configured in `vercel.json`
-   - Memory: 3008 MB - configured in `vercel.json`
+5. **That's it!** Your app will be live with a public URL
+
+**Configuration files:**
+- `nixpacks.toml` - Ensures FFmpeg is installed
+- `railway.json` - Railway-specific configuration
+- `package.json` - Contains build and start scripts
+
+### Vercel (Alternative - FFmpeg not included)
+
+This project also has Vercel configuration, but Vercel serverless functions don't include FFmpeg by default. You would need to use an external video processing service or upgrade to Vercel Pro.
 
 ## Notes
 

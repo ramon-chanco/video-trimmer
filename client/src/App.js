@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import './App.css';
 import axios from 'axios';
 
-// Use relative API path in production (Vercel), localhost in development
+// Use relative API path in production (Railway/Vercel), localhost in development
 const API_BASE = process.env.NODE_ENV === 'production' 
   ? '' 
   : (process.env.REACT_APP_API_URL || 'http://localhost:3001');
