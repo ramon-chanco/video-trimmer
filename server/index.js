@@ -144,24 +144,24 @@ app.post('/api/process', async (req, res) => {
       }
 
       await new Promise((resolve, reject) => {
-        // Robust trimming solution: Use input-side seek with buffer, then output-side precise seek
-        // This hybrid approach eliminates black frames while maintaining efficiency
-        // Buffer of 0.1s ensures we have enough frames before trim point for accurate decoding
-        const bufferTime = 0.1;
-        const seekTime = Math.max(0, trimStartSeconds - bufferTime);
-        const outputStartOffset = trimStartSeconds - seekTime;
-        const outputEndTime = endTime - seekTime;
+        // Frame-accurate trimming with high-quality re-encoding
+        // This approach eliminates black frames by re-encoding the trimmed segment
+        // CRF 20 provides visually lossless quality while maintaining reasonable speed
+        const newDuration = endTime - trimStartSeconds;
         
         ffmpeg(uploadPath)
           .inputOptions([
-            `-ss ${seekTime}`  // Fast seek to buffer point before trim (seeks to keyframe for speed)
+            `-ss ${trimStartSeconds}`  // Seek to start time before input (fast seeking)
           ])
           .outputOptions([
-            `-ss ${outputStartOffset}`,  // Precise seek from buffer point (decodes to exact frame)
-            `-to ${outputEndTime}`,      // End at calculated time relative to seek point
-            '-c copy',                   // Copy streams (no re-encoding, maintains quality)
-            '-avoid_negative_ts make_zero', // Handle timestamp issues
-            '-movflags +faststart'       // Web optimization for streaming
+            `-t ${newDuration}`,        // Duration of trimmed segment
+            '-c:v libx264',           // H.264 video codec
+            '-crf 20',                // High quality (visually lossless, 18-23 range)
+            '-preset medium',         // Balance between speed and compression
+            '-c:a aac',               // AAC audio codec
+            '-b:a 192k',              // High quality audio bitrate
+            '-movflags +faststart',   // Web optimization for streaming
+            '-pix_fmt yuv420p'        // Ensure compatibility
           ])
           .on('start', (commandLine) => {
             console.log(`Processing: ${file.originalName} -> ${outputFileName}`);
