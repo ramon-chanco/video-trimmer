@@ -144,8 +144,8 @@ app.post('/api/process', async (req, res) => {
       }
 
       await new Promise((resolve, reject) => {
-        // Simple trimming: skip start, output specified duration
-        // Using -t (duration) is simpler and more reliable than -to (absolute time)
+        // Stream copy mode: No re-encoding for zero quality loss and fast processing
+        // Cuts at keyframes for frame-accurate trimming
         // IMPORTANT: -ss MUST be input option (before input) to avoid black frames at end
 
         ffmpeg(uploadPath)
@@ -154,13 +154,9 @@ app.post('/api/process', async (req, res) => {
           ])
           .outputOptions([
             `-t ${outputDuration}`,       // Output this duration
-            '-c:v libx264',               // Video codec
-            '-crf 23',                    // Good quality (slightly faster than 20)
-            '-preset fast',               // Faster encoding
-            '-c:a aac',                   // Audio codec
-            '-b:a 192k',                  // Audio bitrate
+            '-c:v copy',                  // Copy video stream (no quality loss)
+            '-c:a copy',                  // Copy audio stream (no quality loss)
             '-movflags +faststart',       // Web optimization
-            '-pix_fmt yuv420p',           // Compatibility
             '-avoid_negative_ts make_zero' // Ensure clean timestamps
           ])
           .on('start', (commandLine) => {
