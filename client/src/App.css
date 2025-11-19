@@ -176,10 +176,60 @@ body {
   transition: width 0.3s ease;
 }
 
+.progress-fill.animating {
+  width: 100%;
+  background: linear-gradient(90deg, #2563eb 0%, #1e40af 50%, #2563eb 100%);
+  background-size: 200% 100%;
+  animation: progressSlide 1.5s ease-in-out infinite;
+}
+
+@keyframes progressSlide {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 .progress-text {
   text-align: center;
   color: #666;
   font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.spinner {
+  display: inline-block;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Completion Section */
+.completion-section {
+  margin: 1.5rem 2rem;
+  padding: 1rem;
+  background: #f0fdf4;
+  border-radius: 8px;
+  border: 1px solid #86efac;
+}
+
+.completion-text {
+  text-align: center;
+  color: #15803d;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 /* Split Layout */

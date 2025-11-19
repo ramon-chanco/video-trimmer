@@ -16,7 +16,7 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedFiles, setProcessedFiles] = useState([]);
   const [zipUrl, setZipUrl] = useState(null);
-  const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const [processingTime, setProcessingTime] = useState(null);
 
   const handleDragOver = useCallback((e) => {
     e.preventDefault();
@@ -59,6 +59,7 @@ function App() {
     setFiles([]);
     setProcessedFiles([]);
     setZipUrl(null);
+    setProcessingTime(null);
   }, []);
 
   const handleUploadAndProcess = async () => {
@@ -67,7 +68,9 @@ function App() {
     setIsProcessing(true);
     setProcessedFiles([]);
     setZipUrl(null);
-    setProgress({ current: 0, total: files.length });
+    setProcessingTime(null);
+
+    const startTime = Date.now();
 
     try {
       // Upload files
@@ -81,34 +84,20 @@ function App() {
       });
 
       const newSessionId = uploadResponse.data.sessionId;
-      const uploadedFiles = uploadResponse.data.files;
 
-      // Process videos one at a time for real-time progress
-      const processedResults = [];
-      for (let i = 0; i < uploadedFiles.length; i++) {
-        try {
-          const processResponse = await axios.post(`${API_BASE}/api/process-single`, {
-            sessionId: newSessionId,
-            file: uploadedFiles[i],
-            fileIndex: i,
-            trimStart: trimStart,
-            trimEnd: trimEnd,
-            outputBaseName: outputBaseName.trim()
-          });
+      // Process videos in batch (faster)
+      const processResponse = await axios.post(`${API_BASE}/api/process`, {
+        sessionId: newSessionId,
+        files: uploadResponse.data.files,
+        trimStart: trimStart,
+        trimEnd: trimEnd,
+        outputBaseName: outputBaseName.trim()
+      });
 
-          processedResults.push({
-            ...processResponse.data,
-            fullUrl: `${API_BASE}${processResponse.data.url}`
-          });
-
-          // Update progress after each video completes
-          setProgress({ current: i + 1, total: uploadedFiles.length });
-          setProcessedFiles([...processedResults]);
-        } catch (error) {
-          console.error(`Error processing video ${i + 1}:`, error);
-          // Continue with other videos even if one fails
-        }
-      }
+      setProcessedFiles(processResponse.data.files.map(file => ({
+        ...file,
+        fullUrl: `${API_BASE}${file.url}`
+      })));
 
       // Create ZIP
       const zipResponse = await axios.post(`${API_BASE}/api/create-zip`, {
@@ -116,6 +105,11 @@ function App() {
       });
 
       setZipUrl(`${API_BASE}${zipResponse.data.zipUrl}`);
+
+      // Calculate and set processing time
+      const endTime = Date.now();
+      const timeInSeconds = ((endTime - startTime) / 1000).toFixed(1);
+      setProcessingTime(timeInSeconds);
     } catch (error) {
       console.error('Error processing videos:', error);
       alert('Error processing videos: ' + (error.response?.data?.error || error.message));
@@ -233,12 +227,21 @@ function App() {
         {isProcessing && (
           <div className="progress-section">
             <div className="progress-bar">
-              <div
-                className="progress-fill"
-                style={{ width: `${(progress.current / progress.total) * 100}%` }}
-              />
+              <div className="progress-fill animating" />
             </div>
-            <p className="progress-text">Processing {progress.current} of {progress.total} videos...</p>
+            <p className="progress-text">
+              <span className="spinner">⚙️</span>
+              Processing {files.length} {files.length === 1 ? 'video' : 'videos'}...
+            </p>
+          </div>
+        )}
+
+        {/* Completion Message */}
+        {!isProcessing && processingTime && processedFiles.length > 0 && (
+          <div className="completion-section">
+            <p className="completion-text">
+              ✅ Processed {processedFiles.length} {processedFiles.length === 1 ? 'video' : 'videos'} in {processingTime}s
+            </p>
           </div>
         )}
 
