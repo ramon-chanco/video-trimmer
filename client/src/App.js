@@ -216,41 +216,52 @@ function App() {
           </div>
         </header>
 
-        <div className="main-content">
-          {/* Queue Section */}
-          <div className="queue-header">
-            <h2 className="queue-title">Queue <span className="queue-count">{files.length}</span></h2>
-            {files.length > 0 && (
-              <button className="clear-queue-btn" onClick={clearQueue}>
-                <span className="btn-icon">🗑️</span>
-                Clear Queue
-              </button>
-            )}
+        {/* Progress */}
+        {isProcessing && (
+          <div className="progress-section">
+            <div className="progress-bar">
+              <div
+                className="progress-fill"
+                style={{ width: `${(progress.current / progress.total) * 100}%` }}
+              />
+            </div>
+            <p className="progress-text">Processing {progress.current} of {progress.total} videos...</p>
           </div>
+        )}
 
-          {/* Video Cards */}
-          {files.length > 0 && (
-            <div className="videos-queue">
-              {files.map((file, index) => {
-                const fileUrl = URL.createObjectURL(file);
-                return (
-                  <div key={index} className="video-card">
-                    <div className="video-player-container">
-                      <video
-                        src={fileUrl}
-                        controls
-                        className="video-preview"
-                        preload="metadata"
-                      />
-                    </div>
-                    <div className="video-details">
-                      <div className="video-header">
-                        <div className="video-info-main">
-                          <div className="video-filename">{file.name}</div>
-                          <div className="video-meta">
-                            <span className="file-size">{formatFileSize(file.size)}</span>
-                            <span className="auto-generated">Auto-generated</span>
-                          </div>
+        {/* Split Layout */}
+        <div className="split-layout">
+          {/* Left Side - Uploaded Videos */}
+          <div className="left-panel">
+            <div className="panel-header">
+              <h2 className="panel-title">Uploaded Videos <span className="queue-count">{files.length}</span></h2>
+              {files.length > 0 && (
+                <button className="clear-queue-btn" onClick={clearQueue}>
+                  <span className="btn-icon">🗑️</span>
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {/* Video Cards */}
+            {files.length > 0 ? (
+              <div className="videos-grid">
+                {files.map((file, index) => {
+                  const fileUrl = URL.createObjectURL(file);
+                  return (
+                    <div key={index} className="video-card">
+                      <div className="video-player-container">
+                        <video
+                          src={fileUrl}
+                          controls
+                          className="video-preview"
+                          preload="metadata"
+                        />
+                      </div>
+                      <div className="video-details">
+                        <div className="video-filename">{file.name}</div>
+                        <div className="video-meta">
+                          <span className="file-size">{formatFileSize(file.size)}</span>
                         </div>
                         <button
                           className="remove-video-btn"
@@ -261,53 +272,42 @@ function App() {
                         </button>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Add More Videos */}
-          <div
-            className={`add-videos-zone ${isDragging ? 'dragging' : ''}`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            <input
-              type="file"
-              multiple
-              accept="video/*"
-              onChange={handleFileSelect}
-              className="file-input"
-              id="file-input"
-            />
-            <label htmlFor="file-input" className="add-videos-label">
-              <div className="upload-icon">📤</div>
-              <div>
-                <div className="add-videos-text">Add more videos</div>
-                <div className="add-videos-subtext">or drag and drop</div>
+                  );
+                })}
               </div>
-            </label>
+            ) : (
+              <div
+                className={`add-videos-zone ${isDragging ? 'dragging' : ''}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <input
+                  type="file"
+                  multiple
+                  accept="video/*"
+                  onChange={handleFileSelect}
+                  className="file-input"
+                  id="file-input"
+                />
+                <label htmlFor="file-input" className="add-videos-label">
+                  <div className="upload-icon">📤</div>
+                  <div>
+                    <div className="add-videos-text">Drop videos here</div>
+                    <div className="add-videos-subtext">or click to browse</div>
+                  </div>
+                </label>
+              </div>
+            )}
           </div>
 
-          {/* Progress */}
-          {isProcessing && (
-            <div className="progress-section">
-              <div className="progress-bar">
-                <div
-                  className="progress-fill"
-                  style={{ width: `${(progress.current / progress.total) * 100}%` }}
-                />
-              </div>
-              <p className="progress-text">Processing {progress.current} of {progress.total} videos...</p>
+          {/* Right Side - Trimmed Videos */}
+          <div className="right-panel">
+            <div className="panel-header">
+              <h2 className="panel-title">Trimmed Videos <span className="queue-count">{processedFiles.length}</span></h2>
             </div>
-          )}
 
-          {/* Processed Files */}
-          {processedFiles.length > 0 && (
-            <div className="results-section">
-              <h3 className="results-title">Processed Videos</h3>
+            {processedFiles.length > 0 ? (
               <div className="processed-videos-grid">
                 {processedFiles.map((file, index) => (
                   <div key={index} className="processed-video-card">
@@ -328,27 +328,32 @@ function App() {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {/* ZIP Download */}
-          {zipUrl && (
-            <div className="zip-section">
-              <div className="zip-card">
-                <h3>✨ All videos ready!</h3>
-                <p>Download all trimmed videos as a ZIP file</p>
-                <button
-                  className="zip-btn"
-                  onClick={async () => {
-                    const zipFilename = `${outputBaseName || 'trimmed'}_all.zip`;
-                    await downloadFile(zipUrl, zipFilename);
-                  }}
-                >
-                  Download All ({processedFiles.length} videos)
-                </button>
+            ) : (
+              <div className="empty-state">
+                <div className="empty-icon">✂️</div>
+                <p className="empty-text">Processed videos will appear here</p>
               </div>
-            </div>
-          )}
+            )}
+
+            {/* ZIP Download */}
+            {zipUrl && (
+              <div className="zip-section">
+                <div className="zip-card">
+                  <h3>✨ All videos ready!</h3>
+                  <p>Download all trimmed videos as a ZIP file</p>
+                  <button
+                    className="zip-btn"
+                    onClick={async () => {
+                      const zipFilename = `${outputBaseName || 'trimmed'}_all.zip`;
+                      await downloadFile(zipUrl, zipFilename);
+                    }}
+                  >
+                    Download All ({processedFiles.length} videos)
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

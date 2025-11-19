@@ -135,34 +135,29 @@ app.post('/api/process', async (req, res) => {
         });
       });
 
-      // Calculate end time (absolute time, not duration)
-      const endTime = videoDuration - trimEndSeconds;
+      // Calculate output duration (much simpler than absolute end time)
+      const outputDuration = videoDuration - trimStartSeconds - trimEndSeconds;
       
-      if (endTime <= trimStartSeconds) {
+      if (outputDuration <= 0) {
         console.error(`Video ${file.originalName} is too short to trim`);
         continue;
       }
 
       await new Promise((resolve, reject) => {
-        // Frame-accurate trimming with high-quality re-encoding
-        // Both -ss and -to are placed AFTER input to ensure accurate timing relative to original video
-        // This eliminates timing mismatches that cause black frames at start/end
-        // CRF 20 provides visually lossless quality while maintaining reasonable speed
+        // Simple trimming: skip start, output specified duration
+        // Using -t (duration) is simpler and more reliable than -to (absolute time)
         
         ffmpeg(uploadPath)
           .outputOptions([
-            `-ss ${trimStartSeconds}`,   // Start time (after input - accurate relative to original)
-            `-to ${endTime}`,            // End time (after input - accurate relative to original)
-            '-c:v libx264',              // H.264 video codec
-            '-crf 20',                   // High quality (visually lossless, 18-23 range)
-            '-preset medium',            // Balance between speed and compression
-            '-c:a aac',                  // AAC audio codec
-            '-b:a 192k',                 // High quality audio bitrate
-            '-movflags +faststart',      // Web optimization for streaming
-            '-pix_fmt yuv420p',          // Ensure compatibility
-            '-copyts',                   // Preserve original timestamps
-            '-fflags +genpts',           // Regenerate presentation timestamps
-            '-avoid_negative_ts make_zero' // Handle negative timestamps
+            `-ss ${trimStartSeconds}`,   // Skip to start time
+            `-t ${outputDuration}`,       // Output this duration (much simpler!)
+            '-c:v libx264',               // Video codec
+            '-crf 23',                    // Good quality (slightly faster than 20)
+            '-preset fast',               // Faster encoding
+            '-c:a aac',                   // Audio codec
+            '-b:a 192k',                  // Audio bitrate
+            '-movflags +faststart',       // Web optimization
+            '-pix_fmt yuv420p'            // Compatibility
           ])
           .on('start', (commandLine) => {
             console.log(`Processing: ${file.originalName} -> ${outputFileName}`);
