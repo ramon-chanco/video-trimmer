@@ -191,10 +191,10 @@ app.post('/api/process', async (req, res) => {
         });
       });
 
-      // Calculate new duration
-      const newDuration = videoDuration - trimStartSeconds - trimEndSeconds;
+      // Calculate end time (absolute time, not duration)
+      const endTime = videoDuration - trimEndSeconds;
       
-      if (newDuration <= 0) {
+      if (endTime <= trimStartSeconds) {
         console.error(`Video ${file.originalName} is too short to trim`);
         continue;
       }
@@ -203,13 +203,13 @@ app.post('/api/process', async (req, res) => {
         // Copy streams to preserve original resolution, format, and quality
         // Only trim, no re-encoding
         // Use input-side seeking (-ss) for accurate start trimming
-        // Use duration (-t) for accurate end trimming
+        // Use absolute end time (-to) for more accurate end trimming with stream copy
         ffmpeg(uploadPath)
           .inputOptions([
             `-ss ${trimStartSeconds}`  // Seek to start time before decoding (more accurate)
           ])
           .outputOptions([
-            `-t ${newDuration}`,        // Set output duration (trim from end)
+            `-to ${endTime}`,           // Set absolute end time (more accurate than duration)
             '-c copy',                 // Copy both video and audio streams (no re-encoding)
             '-avoid_negative_ts make_zero', // Handle timestamp issues
             '-movflags +faststart'       // Web optimization
