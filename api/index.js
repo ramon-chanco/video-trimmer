@@ -147,7 +147,95 @@ app.post('/api/upload', upload.array('videos', 20), async (req, res) => {
   }
 });
 
-// Process video endpoint
+// Process single video endpoint (for real-time progress)
+app.post('/api/process-single', async (req, res) => {
+  const { sessionId, file, fileIndex, trimStart, trimEnd, outputBaseName } = req.body;
+
+  if (!sessionId || !file) {
+    return res.status(400).json({ error: 'Missing required parameters' });
+  }
+
+  const trimStartSeconds = parseFloat(trimStart) || 0;
+  const trimEndSeconds = parseFloat(trimEnd) || 0;
+  const trimmedBaseName = outputBaseName ? outputBaseName.trim() : '';
+  const baseName = trimmedBaseName || 'trimmed';
+
+  try {
+    const sessionDir = path.join(OUTPUT_DIR, sessionId);
+    const uploadPath = file.uploadPath;
+
+    if (!await fs.pathExists(uploadPath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    // Use smart naming convention - preserve original file extension
+    const originalExt = path.extname(file.originalName) || '.mp4';
+    const outputFileName = `${baseName}_${fileIndex + 1}${originalExt}`;
+    const outputPath = path.join(sessionDir, outputFileName);
+
+    // Get video duration first
+    const videoDuration = await new Promise((resolve, reject) => {
+      ffmpeg.ffprobe(uploadPath, (err, metadata) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(metadata.format.duration);
+        }
+      });
+    });
+
+    // Calculate output duration
+    const outputDuration = videoDuration - trimStartSeconds - trimEndSeconds;
+
+    if (outputDuration <= 0) {
+      return res.status(400).json({ error: 'Video is too short to trim' });
+    }
+
+    await new Promise((resolve, reject) => {
+      ffmpeg(uploadPath)
+        .inputOptions([
+          `-ss ${trimStartSeconds}`
+        ])
+        .outputOptions([
+          `-t ${outputDuration}`,
+          '-c:v libx264',
+          '-crf 23',
+          '-preset fast',
+          '-c:a aac',
+          '-b:a 192k',
+          '-movflags +faststart',
+          '-pix_fmt yuv420p',
+          '-avoid_negative_ts make_zero'
+        ])
+        .on('start', (commandLine) => {
+          console.log(`Processing: ${file.originalName} -> ${outputFileName}`);
+        })
+        .on('progress', (progress) => {
+          console.log(`Progress: ${progress.percent}%`);
+        })
+        .on('end', () => {
+          console.log(`Finished: ${file.originalName} -> ${outputFileName}`);
+          resolve();
+        })
+        .on('error', (err) => {
+          console.error(`Error processing ${file.originalName}:`, err);
+          reject(err);
+        })
+        .save(outputPath);
+    });
+
+    res.json({
+      originalName: file.originalName,
+      fileName: outputFileName,
+      url: `/api/output/${sessionId}/${outputFileName}`
+    });
+  } catch (error) {
+    console.error('Processing error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Process video endpoint (batch processing - kept for compatibility)
 app.post('/api/process', async (req, res) => {
   const { sessionId, files, trimStart, trimEnd, outputBaseName } = req.body;
 

@@ -81,20 +81,34 @@ function App() {
       });
 
       const newSessionId = uploadResponse.data.sessionId;
+      const uploadedFiles = uploadResponse.data.files;
 
-      // Process videos
-      const processResponse = await axios.post(`${API_BASE}/api/process`, {
-        sessionId: newSessionId,
-        files: uploadResponse.data.files,
-        trimStart: trimStart,
-        trimEnd: trimEnd,
-        outputBaseName: outputBaseName.trim() // Server will use 'trimmed' if empty
-      });
+      // Process videos one at a time for real-time progress
+      const processedResults = [];
+      for (let i = 0; i < uploadedFiles.length; i++) {
+        try {
+          const processResponse = await axios.post(`${API_BASE}/api/process-single`, {
+            sessionId: newSessionId,
+            file: uploadedFiles[i],
+            fileIndex: i,
+            trimStart: trimStart,
+            trimEnd: trimEnd,
+            outputBaseName: outputBaseName.trim()
+          });
 
-      setProcessedFiles(processResponse.data.files.map(file => ({
-        ...file,
-        fullUrl: `${API_BASE}${file.url}`
-      })));
+          processedResults.push({
+            ...processResponse.data,
+            fullUrl: `${API_BASE}${processResponse.data.url}`
+          });
+
+          // Update progress after each video completes
+          setProgress({ current: i + 1, total: uploadedFiles.length });
+          setProcessedFiles([...processedResults]);
+        } catch (error) {
+          console.error(`Error processing video ${i + 1}:`, error);
+          // Continue with other videos even if one fails
+        }
+      }
 
       // Create ZIP
       const zipResponse = await axios.post(`${API_BASE}/api/create-zip`, {
@@ -102,7 +116,6 @@ function App() {
       });
 
       setZipUrl(`${API_BASE}${zipResponse.data.zipUrl}`);
-      setProgress({ current: files.length, total: files.length });
     } catch (error) {
       console.error('Error processing videos:', error);
       alert('Error processing videos: ' + (error.response?.data?.error || error.message));
