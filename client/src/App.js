@@ -16,7 +16,6 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedFiles, setProcessedFiles] = useState([]);
   const [zipUrl, setZipUrl] = useState(null);
-  const [sessionId, setSessionId] = useState(null);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
 
   const handleDragOver = useCallback((e) => {
@@ -82,7 +81,6 @@ function App() {
       });
 
       const newSessionId = uploadResponse.data.sessionId;
-      setSessionId(newSessionId);
 
       // Process videos
       const processResponse = await axios.post(`${API_BASE}/api/process`, {
