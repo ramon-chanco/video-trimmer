@@ -201,24 +201,24 @@ app.post('/api/process', async (req, res) => {
 
       await new Promise((resolve, reject) => {
         // Frame-accurate trimming with high-quality re-encoding
-        // This approach eliminates black frames by re-encoding the trimmed segment
+        // Both -ss and -to are placed AFTER input to ensure accurate timing relative to original video
+        // This eliminates timing mismatches that cause black frames at start/end
         // CRF 20 provides visually lossless quality while maintaining reasonable speed
-        // Use -to (absolute end time) instead of -t (duration) for more accurate end trimming
         
         ffmpeg(uploadPath)
-          .inputOptions([
-            `-ss ${trimStartSeconds}`  // Seek to start time before input (fast seeking)
-          ])
           .outputOptions([
-            `-to ${endTime}`,          // Absolute end time (more accurate than duration)
-            '-c:v libx264',           // H.264 video codec
-            '-crf 20',                // High quality (visually lossless, 18-23 range)
-            '-preset medium',         // Balance between speed and compression
-            '-c:a aac',               // AAC audio codec
-            '-b:a 192k',              // High quality audio bitrate
-            '-movflags +faststart',   // Web optimization for streaming
-            '-pix_fmt yuv420p',       // Ensure compatibility
-            '-avoid_negative_ts make_zero' // Handle timestamp issues at end
+            `-ss ${trimStartSeconds}`,   // Start time (after input - accurate relative to original)
+            `-to ${endTime}`,            // End time (after input - accurate relative to original)
+            '-c:v libx264',              // H.264 video codec
+            '-crf 20',                   // High quality (visually lossless, 18-23 range)
+            '-preset medium',            // Balance between speed and compression
+            '-c:a aac',                  // AAC audio codec
+            '-b:a 192k',                 // High quality audio bitrate
+            '-movflags +faststart',      // Web optimization for streaming
+            '-pix_fmt yuv420p',         // Ensure compatibility
+            '-copyts',                   // Preserve original timestamps
+            '-fflags +genpts',           // Regenerate presentation timestamps
+            '-avoid_negative_ts make_zero' // Handle negative timestamps
           ])
           .on('start', (commandLine) => {
             console.log(`Processing: ${file.originalName} -> ${outputFileName}`);
