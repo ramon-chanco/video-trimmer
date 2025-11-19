@@ -200,13 +200,19 @@ app.post('/api/process', async (req, res) => {
       }
 
       await new Promise((resolve, reject) => {
+        // Copy streams to preserve original resolution, format, and quality
+        // Only trim, no re-encoding
+        // Use input-side seeking (-ss) for accurate start trimming
+        // Use duration (-t) for accurate end trimming
         ffmpeg(uploadPath)
-          .setStartTime(trimStartSeconds)
-          .setDuration(newDuration)
+          .inputOptions([
+            `-ss ${trimStartSeconds}`  // Seek to start time before decoding (more accurate)
+          ])
           .outputOptions([
-            '-c copy',
-            '-avoid_negative_ts make_zero',
-            '-movflags +faststart'
+            `-t ${newDuration}`,        // Set output duration (trim from end)
+            '-c copy',                 // Copy both video and audio streams (no re-encoding)
+            '-avoid_negative_ts make_zero', // Handle timestamp issues
+            '-movflags +faststart'       // Web optimization
           ])
           .on('start', (commandLine) => {
             console.log(`Processing: ${file.originalName} -> ${outputFileName}`);
