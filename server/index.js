@@ -146,13 +146,11 @@ app.post('/api/process', async (req, res) => {
       await new Promise((resolve, reject) => {
         // Copy streams to preserve original resolution, format, and quality
         // Only trim, no re-encoding
-        // Use input-side seeking (-ss) for accurate start trimming
+        // Use output-side seeking (-ss) for frame-accurate start trimming
         // Use absolute end time (-to) for more accurate end trimming with stream copy
         ffmpeg(uploadPath)
-          .inputOptions([
-            `-ss ${trimStartSeconds}`  // Seek to start time before decoding (more accurate)
-          ])
           .outputOptions([
+            `-ss ${trimStartSeconds}`,  // Decode to exact frame, then copy (frame-accurate)
             `-to ${endTime}`,           // Set absolute end time (more accurate than duration)
             '-c copy',                 // Copy both video and audio streams (no re-encoding)
             '-avoid_negative_ts make_zero', // Handle timestamp issues
