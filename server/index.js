@@ -146,18 +146,22 @@ app.post('/api/process', async (req, res) => {
       await new Promise((resolve, reject) => {
         // Simple trimming: skip start, output specified duration
         // Using -t (duration) is simpler and more reliable than -to (absolute time)
-        
+        // IMPORTANT: -ss MUST be input option (before input) to avoid black frames at end
+
         ffmpeg(uploadPath)
+          .inputOptions([
+            `-ss ${trimStartSeconds}`     // Seek BEFORE decoding (prevents end artifacts)
+          ])
           .outputOptions([
-            `-ss ${trimStartSeconds}`,   // Skip to start time
-            `-t ${outputDuration}`,       // Output this duration (much simpler!)
+            `-t ${outputDuration}`,       // Output this duration
             '-c:v libx264',               // Video codec
             '-crf 23',                    // Good quality (slightly faster than 20)
             '-preset fast',               // Faster encoding
             '-c:a aac',                   // Audio codec
             '-b:a 192k',                  // Audio bitrate
             '-movflags +faststart',       // Web optimization
-            '-pix_fmt yuv420p'            // Compatibility
+            '-pix_fmt yuv420p',           // Compatibility
+            '-avoid_negative_ts make_zero' // Ensure clean timestamps
           ])
           .on('start', (commandLine) => {
             console.log(`Processing: ${file.originalName} -> ${outputFileName}`);
