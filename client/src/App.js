@@ -10,7 +10,7 @@ const API_BASE = process.env.NODE_ENV === 'production'
 function App() {
   const [files, setFiles] = useState([]);
   const [trimStart, setTrimStart] = useState(0.4);
-  const [trimEnd, setTrimEnd] = useState(0.4);
+  const [trimEnd, setTrimEnd] = useState(0.3);
   const [outputBaseName, setOutputBaseName] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
