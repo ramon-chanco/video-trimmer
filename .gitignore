@@ -1,6 +1,7 @@
 node_modules/
 server/node_modules/
 client/node_modules/
+api/node_modules/
 server/uploads/
 server/output/
 server/zips/
@@ -9,4 +10,6 @@ server/zips/
 .env
 build/
 dist/
+client/build/
+.vercel
 

@@ -2,7 +2,10 @@ import React, { useState, useCallback } from 'react';
 import './App.css';
 import axios from 'axios';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+// Use relative API path in production (Vercel), localhost in development
+const API_BASE = process.env.NODE_ENV === 'production' 
+  ? '' 
+  : (process.env.REACT_APP_API_URL || 'http://localhost:3001');
 
 function App() {
   const [files, setFiles] = useState([]);

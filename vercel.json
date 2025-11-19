@@ -1,0 +1,41 @@
+{
+  "version": 2,
+  "buildCommand": "cd client && npm install && npm run build",
+  "outputDirectory": "client/build",
+  "installCommand": "npm install && cd client && npm install && cd ../api && npm install",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/$1"
+    }
+  ],
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 300,
+      "memory": 3008
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
+    }
+  ]
+}
