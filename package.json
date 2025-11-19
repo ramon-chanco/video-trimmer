@@ -1,0 +1,19 @@
+{
+  "name": "video-trimmer",
+  "version": "1.0.0",
+  "description": "Batch video trimming tool",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && node index.js",
+    "client": "cd client && npm start",
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install"
+  },
+  "keywords": ["video", "trim", "batch"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
+
