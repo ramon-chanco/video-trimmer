@@ -147,21 +147,22 @@ app.post('/api/process', async (req, res) => {
         // Frame-accurate trimming with high-quality re-encoding
         // This approach eliminates black frames by re-encoding the trimmed segment
         // CRF 20 provides visually lossless quality while maintaining reasonable speed
-        const newDuration = endTime - trimStartSeconds;
+        // Use -to (absolute end time) instead of -t (duration) for more accurate end trimming
         
         ffmpeg(uploadPath)
           .inputOptions([
             `-ss ${trimStartSeconds}`  // Seek to start time before input (fast seeking)
           ])
           .outputOptions([
-            `-t ${newDuration}`,        // Duration of trimmed segment
+            `-to ${endTime}`,          // Absolute end time (more accurate than duration)
             '-c:v libx264',           // H.264 video codec
             '-crf 20',                // High quality (visually lossless, 18-23 range)
             '-preset medium',         // Balance between speed and compression
             '-c:a aac',               // AAC audio codec
             '-b:a 192k',              // High quality audio bitrate
             '-movflags +faststart',   // Web optimization for streaming
-            '-pix_fmt yuv420p'        // Ensure compatibility
+            '-pix_fmt yuv420p',       // Ensure compatibility
+            '-avoid_negative_ts make_zero' // Handle timestamp issues at end
           ])
           .on('start', (commandLine) => {
             console.log(`Processing: ${file.originalName} -> ${outputFileName}`);
